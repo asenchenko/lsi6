@@ -680,7 +680,7 @@ static int lsi6_init_one (struct pci_dev *pdev,
 
 	i = pci_enable_device (pdev);
 	if (i) {
-	return i;
+		return i;
 	}
 
 	lsi->pciaddr = pci_resource_start (pdev, 0);
@@ -689,33 +689,27 @@ static int lsi6_init_one (struct pci_dev *pdev,
 	lsi->pciaddr, lsi->irq));
 
 
-#if 0
-	if (request_mem_region (lsi->pciaddr, LSI6_WINDOW_SIZE, DRV_NAME) == NULL) {
-	printk (KERN_ERR DRV_NAME ": I/O resource 0x%x @ 0x%lx busy\n",
-		LSI6_WINDOW_SIZE, lsi->pciaddr);
-	return -EBUSY;
-	}
-#else
+
 	if (pci_request_regions(pdev, DRV_NAME)!=0) {
 		printk (KERN_ERR DRV_NAME ": Could not reserve memory\n");
-	        return -EBUSY;
+	    return -EBUSY;
 	} else {
 		printk (DRV_NAME ": Memory reserved properly\n");
 	}
-#endif
-	//lsi->base = ioremap_nocache(lsi->pciaddr, LSI6_WINDOW_SIZE);
+
+
 	unsigned long resource_len = pci_resource_len(pdev,0);
 	lsi->base = ioremap_nocache(lsi->pciaddr,resource_len);
 	if (!lsi->base) {
-	printk(KERN_ERR DRV_NAME ": Can't map 0x%x @ 0x%lx\n",
-		resource_len, lsi->pciaddr);
-	goto error_with_release;
+		printk(KERN_ERR DRV_NAME ": Can't map 0x%x @ 0x%lx\n",
+				resource_len, lsi->pciaddr);
+		goto error_with_release;
 	}
 
 	lsi6_major = register_chrdev(0, DRV_NAME, &lsi6_fops);
 	if (lsi6_major < 0) {
-	printk(KERN_ERR DRV_NAME ": unable to register device with error %d\n", lsi6_major);
-	goto error_with_unmap;
+		printk(KERN_ERR DRV_NAME ": unable to register device with error %d\n", lsi6_major);
+		goto error_with_unmap;
 	}
 
 	for (i = 0; i < LSI6_NUMCHANNELS; i++)

@@ -23,7 +23,6 @@ typedef struct {
 
 struct lsi6_dev {
     resource_size_t pciaddr;
-//	long pciaddr;
     char *base;
     int irq;
     int card;
