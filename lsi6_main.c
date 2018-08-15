@@ -688,16 +688,27 @@ static int lsi6_init_one (struct pci_dev *pdev,
 	DP(printk(DRV_NAME ": pciaddr = %lx, irq = %d\n",
 	lsi->pciaddr, lsi->irq));
 
+
+#if 0
 	if (request_mem_region (lsi->pciaddr, LSI6_WINDOW_SIZE, DRV_NAME) == NULL) {
 	printk (KERN_ERR DRV_NAME ": I/O resource 0x%x @ 0x%lx busy\n",
 		LSI6_WINDOW_SIZE, lsi->pciaddr);
 	return -EBUSY;
 	}
-
-	lsi->base = ioremap_nocache(lsi->pciaddr, LSI6_WINDOW_SIZE);
+#else
+	if (pci_request_regions(pdev, DRV_NAME)!=0) {
+		printk (KERN_ERR DRV_NAME ": Could not reserve memory\n");
+	        return -EBUSY;
+	} else {
+		printk (DRV_NAME ": Memory reserved properly\n");
+	}
+#endif
+	//lsi->base = ioremap_nocache(lsi->pciaddr, LSI6_WINDOW_SIZE);
+	unsigned long resource_len = pci_resource_len(pdev,0);
+	lsi->base = ioremap_nocache(lsi->pciaddr,resource_len);
 	if (!lsi->base) {
 	printk(KERN_ERR DRV_NAME ": Can't map 0x%x @ 0x%lx\n",
-		LSI6_WINDOW_SIZE, lsi->pciaddr);
+		resource_len, lsi->pciaddr);
 	goto error_with_release;
 	}
 
