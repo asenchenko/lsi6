@@ -4,9 +4,9 @@ Priority: extra
 Maintainer: Vasili Gulevich <V.V.Gulevich@mail.ru>
 Build-Depends: debhelper (>= 5.0.0), dkms
 Standards-Version: 3.9.2
-Homepage: https://github.com/basilevs/lsi6
-Vcs-Git: git://git@github.com:basilevs/lsi6.git
-Vcs-Browser: https://github.com/basilevs/lsi6
+Homepage: https://github.com/asenchenko/lsi6
+Vcs-Git: git://git@github.com/asenchenko/lsi6.git
+Vcs-Browser: https://github.com/asenchenko/lsi6
 
 Package: lsi6-dkms
 Architecture: all

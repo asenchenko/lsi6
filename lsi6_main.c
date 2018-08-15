@@ -34,9 +34,9 @@
 #endif
 
 #define DRV_NAME	"lsi6"
-#define DRV_VERSION	"1.08"
-#define DRV_RELDATE	"31 Jan, 2012"
-#define DRV_AUTHOR	"V.Mamkin, P.Cheblakov, V.Gulevich"
+#define DRV_VERSION	"1.09"
+#define DRV_RELDATE	"15 Aug, 2018"
+#define DRV_AUTHOR	"V.Mamkin, P.Cheblakov, V.Gulevich, A. Senchenko"
 
 MODULE_AUTHOR(DRV_AUTHOR);
 MODULE_DESCRIPTION("lsi6 - line serial interface for CAMAC");
@@ -270,7 +270,7 @@ static int lsi6_open(struct inode * inode, struct file * file)
 static long lsi6_ioctl(struct file *file,
 			unsigned int cmd, unsigned long arg)
 {
-	struct inode *inode = file->f_dentry->d_inode;
+	struct inode *inode = file->f_path.dentry->d_inode;
 	int chnum = MINOR(inode->i_rdev);
 	unsigned long * ptr = (unsigned long * ) arg;
 	unsigned long x;
@@ -429,11 +429,11 @@ static int lsi6_ioctl_locked(struct inode *inode, struct file *file,
 static ssize_t lsi6_read(struct file * file, char * buf,
 			   size_t count, loff_t *ppos)
 {
-	unsigned int chnum=MINOR(file->f_dentry->d_inode->i_rdev);
+	unsigned int chnum=MINOR(file->f_path.dentry->d_inode->i_rdev);
 	int naf = *ppos;
 	int n,a,f, rc;
 	unsigned long x;
-	unsigned int card = get_device_no(MAJOR(file->f_dentry->d_inode->i_rdev));
+	unsigned int card = get_device_no(MAJOR(file->f_path.dentry->d_inode->i_rdev));
 	lsi6_dev_t *lsi;
 	lsi6_channel * channel;
 
@@ -498,11 +498,11 @@ static ssize_t lsi6_read(struct file * file, char * buf,
 static ssize_t lsi6_write(struct file * file, const char * buf,
 				size_t count, loff_t *ppos)
 {
-	unsigned int chnum=MINOR(file->f_dentry->d_inode->i_rdev);
+	unsigned int chnum=MINOR(file->f_path.dentry->d_inode->i_rdev);
 	int naf = *ppos;
 	int n,a,f, rc;
 	unsigned long x;
-	unsigned int card = get_device_no(MAJOR(file->f_dentry->d_inode->i_rdev));
+	unsigned int card = get_device_no(MAJOR(file->f_path.dentry->d_inode->i_rdev));
 	lsi6_dev_t *lsi;
 	lsi6_channel * channel;
 	if (card < 0)
@@ -586,10 +586,10 @@ static int lsi6_release(struct inode * inode, struct file * file)
 }
 
 unsigned int poll(struct file *filp, struct poll_table_struct *wait) {
-	unsigned int chnum=MINOR(filp->f_dentry->d_inode->i_rdev);
+	unsigned int chnum=MINOR(filp->f_path.dentry->d_inode->i_rdev);
 	int n = N_NAF(filp->f_pos);
 	int group = n/3;
-	unsigned int card = get_device_no(MAJOR(filp->f_dentry->d_inode->i_rdev));
+	unsigned int card = get_device_no(MAJOR(filp->f_path.dentry->d_inode->i_rdev));
 	lsi6_dev_t *lsi = &lsi6_dev[card];
 	lsi6_channel * channel = &lsi->channels[chnum];
 	if (card < 0 || card >= LSI6_NUMCARDS || chnum < 0 || chnum >= LSI6_NUMCHANNELS || n < 0 || n > 23) {
@@ -680,7 +680,7 @@ static int lsi6_init_one (struct pci_dev *pdev,
 
 	i = pci_enable_device (pdev);
 	if (i) {
-	return i;
+		return i;
 	}
 
 	lsi->pciaddr = pci_resource_start (pdev, 0);
@@ -688,23 +688,28 @@ static int lsi6_init_one (struct pci_dev *pdev,
 	DP(printk(DRV_NAME ": pciaddr = %lx, irq = %d\n",
 	lsi->pciaddr, lsi->irq));
 
-	if (request_mem_region (lsi->pciaddr, LSI6_WINDOW_SIZE, DRV_NAME) == NULL) {
-	printk (KERN_ERR DRV_NAME ": I/O resource 0x%x @ 0x%lx busy\n",
-		LSI6_WINDOW_SIZE, lsi->pciaddr);
-	return -EBUSY;
+
+
+	if (pci_request_regions(pdev, DRV_NAME)!=0) {
+		printk (KERN_ERR DRV_NAME ": Could not reserve memory\n");
+	    return -EBUSY;
+	} else {
+		printk (DRV_NAME ": Memory reserved properly\n");
 	}
 
-	lsi->base = ioremap_nocache(lsi->pciaddr, LSI6_WINDOW_SIZE);
+
+	unsigned long resource_len = pci_resource_len(pdev,0);
+	lsi->base = ioremap_nocache(lsi->pciaddr,resource_len);
 	if (!lsi->base) {
-	printk(KERN_ERR DRV_NAME ": Can't map 0x%x @ 0x%lx\n",
-		LSI6_WINDOW_SIZE, lsi->pciaddr);
-	goto error_with_release;
+		printk(KERN_ERR DRV_NAME ": Can't map 0x%x @ 0x%lx\n",
+				resource_len, lsi->pciaddr);
+		goto error_with_release;
 	}
 
 	lsi6_major = register_chrdev(0, DRV_NAME, &lsi6_fops);
 	if (lsi6_major < 0) {
-	printk(KERN_ERR DRV_NAME ": unable to register device with error %d\n", lsi6_major);
-	goto error_with_unmap;
+		printk(KERN_ERR DRV_NAME ": unable to register device with error %d\n", lsi6_major);
+		goto error_with_unmap;
 	}
 
 	for (i = 0; i < LSI6_NUMCHANNELS; i++)
