@@ -5,11 +5,7 @@ Maintainer: Vasili Gulevich <V.V.Gulevich@mail.ru>
 Build-Depends: debhelper (>= 5.0.0), dkms
 Standards-Version: 3.9.2
 Homepage: https://github.com/asenchenko/lsi6
-<<<<<<< HEAD
 Vcs-Git: git://git@github.com/asenchenko/lsi6.git
-=======
-Vcs-Git: git://github.com/asenchenko/lsi6
->>>>>>> a560d422de9ed6cb2a6ce35813ba37c239b663bf
 Vcs-Browser: https://github.com/asenchenko/lsi6
 
 Package: lsi6-dkms
